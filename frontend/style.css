@@ -1,87 +1,189 @@
-/* General Styles */
+/* General Styling */
 body {
-    font-family: Arial, sans-serif;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background-color: #f7f9fc;
-  }
-  
-  header {
-    width: 100%;
-    background-color: #28a745;
-    color: white;
-    text-align: center;
-    padding: 1em 0;
-  }
-  
-  h1, h2, h3 {
-    margin: 0.5em 0;
-  }
-  
-  /* Main Section */
-  main {
-    padding: 2em;
-    width: 80%;
-  }
-  
-  .upload-section {
-    text-align: center;
-    margin-bottom: 2em;
-  }
-  
-  input[type="file"] {
-    margin: 1em 0;
-  }
-  
-  button {
-    background-color: #28a745;
-    color: white;
-    border: none;
-    padding: 0.5em 1em;
-    cursor: pointer;
-    font-size: 1em;
-  }
-  
-  button:hover {
-    background-color: #218838;
-  }
-  
-  #resultSection {
-    background-color: #ffffff;
-    padding: 1em;
-    border-radius: 8px;
-    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-  }
-  
-  .hidden {
-    display: none;
-  }
-  
-  #matchedImages {
-    display: flex;
-    gap: 1em;
-    flex-wrap: wrap;
-  }
-  
-  #matchedImages img {
-    max-width: 150px;
-    max-height: 150px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-  }
-  
-  @media (max-width: 768px) {
-    main {
-      width: 100%;
-      padding: 1em;
-    }
-  
-    #matchedImages img {
-      max-width: 100px;
-      max-height: 100px;
-    }
-  }
-  
+  font-family: 'Arial', sans-serif;
+  margin: 0;
+  padding: 0;
+  color: #fff;
+  background: url('assets/leaf-background.jpg') no-repeat center center/cover;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden; /* Prevent any scrolling caused by overextension */
+}
+
+.main-container {
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  gap: 20px; /* Space between left and right sections */
+  height: 100vh;
+  box-sizing: border-box; /* Include padding and borders */
+  overflow: hidden; /* Prevent overflow */
+  padding-left: 40px; /* Add space on the left side of the container */
+}
+
+.left-section {
+  width: 40%;
+  background: rgba(0, 0, 0, 0.4); /* Semi-transparent background */
+  backdrop-filter: blur(10px); /* Apply blur effect */
+  -webkit-backdrop-filter: blur(10px); /* For Safari compatibility */
+  border-radius: 15px;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: auto; /* Adjust height to fit content */
+  align-self: center;
+  margin-left: 20px; /* Adds additional gap on the left of the left-section */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3); /* Optional: Add subtle shadow for depth */
+}
+
+
+
+.content-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+}
+
+.left-section h1 {
+  font-size: 2rem;
+  font-weight: bold;
+}
+
+.left-section p {
+  font-size: 1rem;
+  color: #ddd;
+}
+
+select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 5px;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.upload-box {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 20px;
+  border: 2px dashed rgba(255, 255, 255, 0.5);
+  border-radius: 10px;
+  cursor: pointer;
+  background: linear-gradient(to right, #81b782, #e8d67e); /* Green to yellow gradient */
+  transition: transform 0.3s ease;
+}
+
+.upload-box img {
+  width: 70px;
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: space-between;
+}
+
+.action-buttons button {
+  padding: 10px 20px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+#cancel-btn {
+  background: #444;
+  color: #fff;
+}
+
+#submit-btn {
+  background: #4CAF50;
+  color: #fff;
+}
+
+/* Right Section */
+.right-section {
+  width: 60%;
+  background: linear-gradient(to left, rgba(0, 0, 0, 1), rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 1)); /* Black to transparent gradient */
+  padding: 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; /* Align content to the top */
+  height: 100%; /* Full container height */
+  box-sizing: border-box;
+  margin-right: 0; /* Remove any margin on the right */
+  border-top-right-radius: 15px; /* Retain rounded top corners */
+  border-bottom-right-radius: 15px; /* Retain rounded bottom corners */
+}
+
+
+
+.results h2 {
+  font-size: 1.5rem;
+}
+
+.carousel-container {
+  background: rgba(0, 0, 0, 0.8);
+  padding: 20px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin-top: 0px; /* Reduce vertical spacing */
+  width: 100%; /* Take up full width of the parent container */
+  height: 300px; /* Carousel height */
+  box-sizing: border-box; /* Include padding and border in dimensions */
+}
+
+h3 {
+  margin-top:  120px;
+  margin-bottom: 30px; /* Slight spacing above the carousel */
+}
+
+
+
+.carousel {
+  display: flex;
+  align-items: center;
+  gap: 20px; /* Add space between arrows and image */
+  width: 100%; /* Take up full width of the carousel-container */
+  height: 300px; /* Increase carousel height for larger images */
+  justify-content: center;
+}
+
+.carousel-images {
+  display: flex;
+  justify-content: center;
+  width: 80%; /* Reduce width slightly for better spacing with buttons */
+  height: 100%; /* Match carousel height */
+  overflow: hidden;
+}
+
+.carousel-images img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px; /* Slightly larger border radius for rounded edges */
+}
+
+.carousel-btn {
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  font-size: 2.5rem; /* Increase font size for larger arrows */
+  border: none;
+  cursor: pointer;
+  padding: 15px; /* Add padding for a larger button */
+  border-radius: 50%; /* Keep circular buttons */
+}
+
+.carousel-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

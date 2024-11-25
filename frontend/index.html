@@ -3,35 +3,54 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Plant Disease Identification</title>
   <link rel="stylesheet" href="style.css">
+  <title>AgroVision AI</title>
 </head>
 <body>
-  <header>
-    <h1>Plant Disease Identification System</h1>
-  </header>
+  <div class="main-container">
+    <!-- Left Section -->
+    <div class="left-section">
+      <div class="content-wrapper">
+        <h1>AgroVision AI</h1>
+        <p>Revolutionizing Crop Health with AI</p>
 
-  <main>
-    <section class="upload-section">
-      <h2>Upload Plant Image</h2>
-      <input type="file" id="imageUpload" accept="image/*">
-      <button id="predictButton" onclick="predictDisease()">Predict</button>
-    </section>
+        <select id="model-selector">
+          <option value="1">Model 1</option>
+          <option value="2">Model 2</option>
+        </select>
 
-    <section id="resultSection" class="hidden">
-      <h2>Prediction Results</h2>
-      <div id="prediction">
-        <p><strong>Predicted Class:</strong> <span id="predictedClass">N/A</span></p>
-        <p><strong>Confidence:</strong> <span id="confidence">N/A</span></p>
+        <div class="upload-container">
+          <label for="image-upload" class="upload-box">
+            <img src="assets/upload-icon.png" alt="Upload Icon">
+          </label>
+          <input type="file" id="image-upload" accept="image/*" hidden>
+        </div>
+        
+        <div class="action-buttons">
+          <button id="cancel-btn">Cancel</button>
+          <button id="submit-btn">Submit</button>
+        </div>
       </div>
-      <h3>Matched Training Images</h3>
-      <div id="matchedImages"></div>
-    </section>
-  </main>
+    </div>
 
-  <footer>
-    <p>&copy; 2024 Plant Disease Identification System</p>
-  </footer>
+    <!-- Right Section -->
+    <div class="right-section">
+      <div class="results">
+        <h2>CROP: <span id="crop-result">Tomato</span> - <span id="crop-confidence">98%</span></h2>
+        <h2>DISEASE: <span id="disease-result">Blight</span> - <span id="disease-confidence">93%</span></h2>
+      </div>
+      <h3>Similar Images</h3>
+      <div class="carousel-container">
+        <div class="carousel">
+          <button class="carousel-btn left">❮</button>
+          <div class="carousel-images">
+            <img src="images/placeholder1.jpg" alt="Similar Image">
+          </div>
+          <button class="carousel-btn right">❯</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script src="script.js"></script>
 </body>

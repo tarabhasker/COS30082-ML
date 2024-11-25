@@ -1,3 +1,43 @@
+const images = [
+  "images/placeholder1.jpg",
+  "images/placeholder2.jpg",
+  "images/placeholder3.jpg"
+];
+
+let currentIndex = 0;
+
+// Get elements
+const imgElement = document.querySelector(".carousel-images img");
+const leftButton = document.querySelector(".carousel-btn.left");
+const rightButton = document.querySelector(".carousel-btn.right");
+
+// Update the image displayed
+function updateImage() {
+  imgElement.src = images[currentIndex];
+  leftButton.disabled = currentIndex === 0; // Disable left button at start
+  rightButton.disabled = currentIndex === images.length - 1; // Disable right button at end
+}
+
+// Event listeners
+leftButton.addEventListener("click", () => {
+  if (currentIndex > 0) {
+    currentIndex--;
+    updateImage();
+  }
+});
+
+rightButton.addEventListener("click", () => {
+  if (currentIndex < images.length - 1) {
+    currentIndex++;
+    updateImage();
+  }
+});
+
+// Initial setup
+updateImage();
+
+
+
 async function predictDisease() {
     const imageUpload = document.getElementById('imageUpload');
     const resultSection = document.getElementById('resultSection');
