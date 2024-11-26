@@ -1,3 +1,5 @@
+const BASE_URL = "http://localhost:5000";
+
 document.getElementById("image-upload").addEventListener("change", function () {
   const file = this.files[0];
   const uploadBox = document.querySelector(".upload-box");
@@ -17,6 +19,8 @@ document.getElementById("image-upload").addEventListener("change", function () {
 
 document.getElementById("submit-btn").addEventListener("click", async function () {
   const imageUpload = document.getElementById("image-upload");
+  const modelSelector = document.getElementById("model-selector");
+  const selectedModel = modelSelector.value; 
   const cropResult = document.getElementById("crop-result");
   const cropConfidence = document.getElementById("crop-confidence");
   const diseaseResult = document.getElementById("disease-result");
@@ -29,23 +33,30 @@ document.getElementById("submit-btn").addEventListener("click", async function (
 
   const formData = new FormData();
   formData.append("file", imageUpload.files[0]);
+  formData.append("model", selectedModel);
 
   try {
-    const response = await fetch("http://localhost:5000/predict", { method: "POST", body: formData });
+    const response = await fetch(`${BASE_URL}/predict`, { method: "POST", body: formData });
     const data = await response.json();
 
-    // Update the results section
-    cropResult.textContent = data.crop.name;
-    cropConfidence.textContent = `${data.crop.class}%`;
-    diseaseResult.textContent = data.disease.name;
-    diseaseConfidence.textContent = `${data.disease.class}%`;
+    if (!response.ok) {
+      alert(`Error: ${data.error}`);
+      return;
+    }
 
-    // Fetch matching images for the carousel
-    const imagesResponse = await fetch("http://localhost:5000/fetch-matching-images", {
+    // Update the results section with name and confidence
+    cropResult.textContent = data.crop.name;
+    cropConfidence.textContent = `${(data.crop.confidence * 100).toFixed(2)}%`;
+    diseaseResult.textContent = data.disease.name;
+    diseaseConfidence.textContent = `${(data.disease.confidence * 100).toFixed(2)}%`;
+
+    // Use class labels to fetch matching images
+    const imagesResponse = await fetch(`${BASE_URL}/fetch-matching-images`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ crop_label: data.crop.class, disease_label: data.disease.class }),
     });
+
     const imagesData = await imagesResponse.json();
 
     // Update carousel with fetched images
@@ -53,10 +64,9 @@ document.getElementById("submit-btn").addEventListener("click", async function (
     const leftButton = document.querySelector(".carousel-btn.left");
     const rightButton = document.querySelector(".carousel-btn.right");
 
-    let images = imagesData.images.map(imagePath => `/images/${imagePath}`);
+    let images = imagesData.images.map(imagePath => `${BASE_URL}/images/${imagePath}`);
     let currentIndex = 0;
 
-    // Function to update the displayed image
     function updateImage() {
       carouselImages.innerHTML = ""; // Clear previous image
       const img = document.createElement("img");
@@ -69,7 +79,6 @@ document.getElementById("submit-btn").addEventListener("click", async function (
       rightButton.disabled = currentIndex === images.length - 1;
     }
 
-    // Event listeners for buttons
     leftButton.addEventListener("click", () => {
       if (currentIndex > 0) {
         currentIndex--;
@@ -84,7 +93,6 @@ document.getElementById("submit-btn").addEventListener("click", async function (
       }
     });
 
-    // Initialize the carousel with the first image
     if (images.length > 0) {
       updateImage();
     } else {
@@ -95,3 +103,4 @@ document.getElementById("submit-btn").addEventListener("click", async function (
     alert("An error occurred. Please try again.");
   }
 });
+

@@ -10,6 +10,10 @@ from torchvision import transforms
 import uuid  # 用于生成唯一的文件名
 import pandas as pd
 from flask import send_from_directory
+from torch.nn.functional import normalize
+from torchvision import models
+import torch.nn.functional as F
+from torch import nn
 
 # 初始化 Flask 应用
 app = Flask(__name__)
@@ -18,14 +22,86 @@ CORS(app)
 # 检查设备
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
-# 加载 CLIP 模型
+# Load model 1
 clip_model, preprocess = clip.load("ViT-B/32", device=device)
-
-# 加载模型
 crop_model = tf.keras.models.load_model("model/VisualLanguageClipCrop.h5")
 disease_model = tf.keras.models.load_model("model/VisualLanguageClipDisease.h5")
 
-# 类别映射
+# Load Model 2
+class ImprovedDualBranchModel(torch.nn.Module):
+    def __init__(self, num_crops, num_diseases, embedding_dim=300, pretrained_embeddings=None):
+        super(ImprovedDualBranchModel, self).__init__()
+        self.backbone = models.resnet18(weights="IMAGENET1K_V1")
+        self.backbone.fc = torch.nn.Identity()
+        self.feature_projector = torch.nn.Linear(512, embedding_dim)
+        self.crop_classifier = torch.nn.Linear(embedding_dim, num_crops)
+        self.disease_classifier = torch.nn.Linear(embedding_dim, num_diseases)
+
+    def forward(self, x):
+        features = self.backbone(x)
+        projected_features = self.feature_projector(features)
+        normalized_features = normalize(projected_features, p=2, dim=1)
+        crop_logits = self.crop_classifier(normalized_features)
+        disease_logits = self.disease_classifier(normalized_features)
+        return crop_logits, disease_logits, normalized_features
+
+
+# Load pretrained Model 2
+model_2 = torch.load("model/model_test_without_domain.h5", map_location=torch.device("cpu"))
+model_2.eval()
+
+# Model 2's transformations
+transform_2 = transforms.Compose([transforms.Resize((224, 224)), transforms.ToTensor()])
+
+# Load Model 3
+class DomainDiscriminator(nn.Module):
+    def __init__(self, input_dim, hidden_dim=128):
+        super(DomainDiscriminator, self).__init__()
+        self.model = nn.Sequential(
+            nn.Linear(input_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, hidden_dim),
+            nn.ReLU(),
+            nn.Linear(hidden_dim, 2)  # Lab and field
+        )
+
+    def forward(self, x):
+        return self.model(x)
+
+class ImprovedDualBranchModelWithDomainDiscriminator(nn.Module):
+    def __init__(self, num_crops, num_diseases, embedding_dim, pretrained_embeddings):
+        super(ImprovedDualBranchModelWithDomainDiscriminator, self).__init__()
+        self.backbone = models.resnet18(weights='IMAGENET1K_V1')
+        self.backbone.fc = nn.Identity()
+        self.feature_projector = nn.Linear(512, embedding_dim)
+        self.crop_classifier = nn.Linear(embedding_dim, num_crops)
+        self.disease_classifier = nn.Linear(embedding_dim, num_diseases)
+        self.domain_discriminator = DomainDiscriminator(input_dim=embedding_dim)
+
+    def forward(self, x, alpha=1.0):
+        features = self.backbone(x)
+        projected_features = self.feature_projector(features)
+        normalized_features = F.normalize(projected_features, p=2, dim=1)
+        crop_logits = self.crop_classifier(normalized_features)
+        disease_logits = self.disease_classifier(normalized_features)
+        domain_logits = self.domain_discriminator(normalized_features)
+        return crop_logits, disease_logits, domain_logits
+
+
+model_3 = ImprovedDualBranchModelWithDomainDiscriminator(
+    num_crops=14,
+    num_diseases=21,
+    embedding_dim=384,
+    pretrained_embeddings={"crop": torch.zeros(14, 384), "disease": torch.zeros(21, 384)}
+)
+# Adjust to ignore unexpected keys
+state_dict_3 = torch.load("model/best_model_with_domain.pth", map_location=torch.device("cpu"))
+model_3.load_state_dict(state_dict_3, strict=False)
+model_3.eval()
+
+transform_3 = transform_2
+
+# Labels
 crop_labels = {
     0: "Apple Leaf",
     1: "Blueberry Leaf",
@@ -67,6 +143,8 @@ disease_labels = {
     20: "Tomato Leaf with Mosaic Virus",
 }
 
+domain_labels = {0: "Lab", 1: "Field"}
+
 # 数据增强和预处理
 augmentation_transforms = transforms.Compose([
     transforms.RandomHorizontalFlip(p=0.5),
@@ -79,6 +157,34 @@ augmentation_transforms = transforms.Compose([
                          std=(0.26862954, 0.26130258, 0.27577711))  # CLIP normalization
 ])
 
+# Helper function for Model 2
+def predict_with_model_2(image_path):
+    # Preprocess the image
+    image = Image.open(image_path).convert("RGB")
+    image = transform_2(image).unsqueeze(0)
+    image = image.to(device)
+
+    with torch.no_grad():
+        # Get the logits from the model
+        crop_logits, disease_logits, _ = model_2(image)
+
+        # Predict the class with the highest score
+        crop_pred = torch.argmax(crop_logits, dim=1).item()
+        disease_pred = torch.argmax(disease_logits, dim=1).item()
+
+        # Compute confidence scores using softmax
+        crop_probs = F.softmax(crop_logits, dim=1)
+        disease_probs = F.softmax(disease_logits, dim=1)
+
+        # Extract the confidence of the predicted class
+        crop_confidence = crop_probs[0, crop_pred].item()
+        disease_confidence = disease_probs[0, disease_pred].item()
+
+    # Map predictions to descriptions
+    crop_name = crop_labels[crop_pred]
+    disease_name = disease_labels[disease_pred]
+
+    return crop_name, crop_confidence, disease_name, disease_confidence
 
 # 图像预处理
 def preprocess_image(image_path, augment=False):
@@ -104,10 +210,28 @@ def predict_image(image_path, clip_model, classification_model, label_map):
     # 使用分类模型预测
     predictions = classification_model.predict(tf.expand_dims(image_features_tf, axis=0))
     predicted_class = tf.argmax(predictions[0]).numpy()
+    confidence = float(predictions[0][predicted_class])
+    
 
     # 返回预测结果
-    return predicted_class, label_map[predicted_class]
+    return predicted_class, label_map[predicted_class], confidence
 
+
+# Helper functions
+def predict_with_model_3(image_path):
+    image = Image.open(image_path).convert("RGB")
+    image = transform_3(image).unsqueeze(0).to(device)
+
+    with torch.no_grad():
+        crop_logits, disease_logits, domain_logits = model_3(image)
+        crop_pred = torch.argmax(crop_logits, dim=1).item()
+        disease_pred = torch.argmax(disease_logits, dim=1).item()
+        domain_pred = torch.argmax(domain_logits, dim=1).item()
+
+        crop_confidence = F.softmax(crop_logits, dim=1)[0, crop_pred].item()
+        disease_confidence = F.softmax(disease_logits, dim=1)[0, disease_pred].item()
+
+    return crop_labels[crop_pred], crop_confidence, disease_labels[disease_pred], disease_confidence, domain_labels[domain_pred]
 
 @app.route("/")
 def index():
@@ -116,10 +240,12 @@ def index():
 
 @app.route("/predict", methods=["POST"])
 def predict():
-    if "file" not in request.files:
-        return jsonify({"error": "No file uploaded"}), 400
+    if "file" not in request.files or "model" not in request.form:
+        return jsonify({"error": "No file or model selected"}), 400
 
     file = request.files["file"]
+    selected_model = request.form["model"]
+
     if file.filename == "":
         return jsonify({"error": "No file selected"}), 400
 
@@ -131,26 +257,42 @@ def predict():
         file.save(image_path)
 
         # Perform predictions
-        crop_class, crop_name = predict_image(image_path, clip_model, crop_model, crop_labels)
-        disease_class, disease_name = predict_image(image_path, clip_model, disease_model, disease_labels)
+        if selected_model == "1":
+            # Use Model 1
+            crop_class, crop_name, crop_confidence = predict_image(image_path, clip_model, crop_model, crop_labels)
+            disease_class, disease_name, disease_confidence = predict_image(image_path, clip_model, disease_model, disease_labels)
+
+            crop_class = int(crop_class)  # Convert to Python int
+            disease_class = int(disease_class)  # Convert to Python int
+        elif selected_model == "2":
+            # Use Model 2
+            crop_name, crop_confidence, disease_name, disease_confidence = predict_with_model_2(image_path)
+            crop_class = int(list(crop_labels.values()).index(crop_name))  # Convert to Python int
+            disease_class = int(list(disease_labels.values()).index(disease_name))  # Convert to Python int
+        elif selected_model == "3":
+            crop_name, crop_confidence, disease_name, disease_confidence, domain_name = predict_with_model_3(image_path)
+            crop_class = int(list(crop_labels.values()).index(crop_name))  # Convert to Python int
+            disease_class = int(list(disease_labels.values()).index(disease_name))  # Convert to Python int
+        else:
+            return jsonify({"error": "Invalid model selected"}), 400
 
         # Clean up uploaded file
         if os.path.exists(image_path):
             os.remove(image_path)
 
-        # Return both class labels and names
-        return jsonify({
-            "crop": {
-                "class": int(crop_class),  # Label
-                "name": crop_name          # Name
-            },
-            "disease": {
-                "class": int(disease_class),  # Label
-                "name": disease_name          # Name
-            }
-        })
+        # Prepare the response
+        response = {
+            "crop": {"class": crop_class, "name": crop_name, "confidence": crop_confidence},
+            "disease": {"class": disease_class, "name": disease_name, "confidence": disease_confidence},
+        }
+
+        if selected_model == "3":
+            response["domain"] = domain_name
+
+        return jsonify(response)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route("/fetch-matching-images", methods=["POST"])
 def fetch_matching_images():
