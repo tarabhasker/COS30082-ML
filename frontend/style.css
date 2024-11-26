@@ -78,11 +78,14 @@ select {
   cursor: pointer;
   background: linear-gradient(to right, #81b782, #e8d67e); /* Green to yellow gradient */
   transition: transform 0.3s ease;
+  background-size: cover; /* Make the background image fill the box */
+  background-position: center; /* Center the image */
 }
 
 .upload-box img {
   width: 70px;
 }
+
 
 .action-buttons {
   display: flex;
@@ -186,4 +189,32 @@ h3 {
 .carousel-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.results {
+  margin-top: 20px;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.5); /* Slightly transparent background */
+  border-radius: 10px;
+  color: #fff;
+  font-family: Arial, sans-serif;
+}
+
+.results h2 {
+  font-size: 1.2rem;
+  margin: 10px 0;
+  display: flex;
+  justify-content: space-between;
+}
+
+.results span {
+  font-weight: bold;
+  color: #4CAF50; /* Highlight predictions */
+}
+
+#image-preview {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 10px;
 }
