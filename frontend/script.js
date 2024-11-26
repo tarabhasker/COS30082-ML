@@ -53,7 +53,7 @@ document.getElementById("submit-btn").addEventListener("click", async function (
     const leftButton = document.querySelector(".carousel-btn.left");
     const rightButton = document.querySelector(".carousel-btn.right");
 
-    let images = imagesData.images.map(imagePath => `backend/dataset/plantvillage/${imagePath}`);
+    let images = imagesData.images.map(imagePath => `/images/${imagePath}`);
     let currentIndex = 0;
 
     // Function to update the displayed image

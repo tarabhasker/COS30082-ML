@@ -9,6 +9,7 @@ import torch
 from torchvision import transforms
 import uuid  # 用于生成唯一的文件名
 import pandas as pd
+from flask import send_from_directory
 
 # 初始化 Flask 应用
 app = Flask(__name__)
@@ -168,12 +169,17 @@ def fetch_matching_images():
 
         # Log response for debugging
         print("Filtered image paths:", image_paths)
+        print("Image paths sent to frontend:", image_paths)
 
         return jsonify({"images": image_paths}), 200
     except Exception as e:
         print("Error in /fetch-matching-images:", str(e))  # Log the error
         return jsonify({"error": str(e)}), 500
 
+# Serve static images from the dataset folder
+@app.route('/images/<path:filename>')
+def serve_image(filename):
+    return send_from_directory('dataset/plantvillage', filename)
 
 @app.route("/favicon.ico")
 def favicon():
