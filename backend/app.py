@@ -15,11 +15,11 @@ from torchvision import models
 import torch.nn.functional as F
 from torch import nn
 
-# 初始化 Flask 应用
+# Initialize Flask app
 app = Flask(__name__)
 CORS(app)
 
-# 检查设备
+# Check device
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Load model 1
@@ -145,7 +145,7 @@ disease_labels = {
 
 domain_labels = {0: "Lab", 1: "Field"}
 
-# 数据增强和预处理
+# Data augmentation and preprocessing
 augmentation_transforms = transforms.Compose([
     transforms.RandomHorizontalFlip(p=0.5),
     transforms.RandomVerticalFlip(p=0.5),
@@ -186,7 +186,7 @@ def predict_with_model_2(image_path):
 
     return crop_name, crop_confidence, disease_name, disease_confidence
 
-# 图像预处理
+# Image preprocessing function
 def preprocess_image(image_path, augment=False):
     image = Image.open(image_path).convert("RGB")
     if augment:
@@ -194,26 +194,26 @@ def preprocess_image(image_path, augment=False):
     return preprocess(image).unsqueeze(0).to(device)
 
 
-# 单张图像预测
+# Single image prediction
 def predict_image(image_path, clip_model, classification_model, label_map):
-    # 预处理图像
+    # Preprocess the image
     image = preprocess_image(image_path)
     with torch.no_grad():
-        # 提取图像特征
+        # Extract image features
         image_features = clip_model.encode_image(image)
         image_features /= image_features.norm(dim=-1, keepdim=True)
 
-    # 转换为 TensorFlow 格式
+    # Convert to TensorFlow format
     image_features_tf = tf.convert_to_tensor(image_features.cpu().numpy())
     image_features_tf = tf.squeeze(image_features_tf, axis=0)
 
-    # 使用分类模型预测
+    # Use the classification model to predict
     predictions = classification_model.predict(tf.expand_dims(image_features_tf, axis=0))
     predicted_class = tf.argmax(predictions[0]).numpy()
     confidence = float(predictions[0][predicted_class])
     
 
-    # 返回预测结果
+    # Return predicted class
     return predicted_class, label_map[predicted_class], confidence
 
 
